@@ -7,15 +7,30 @@ if (!admin.apps.length) {
   initializeApp();
 }
 
+const settingsApplied = new Set<string>();
+
+const getConfiguredFirestore = (instanceId: string) => {
+  const db = getFirestore(instanceId);
+  if (!settingsApplied.has(instanceId)) {
+    settingsApplied.add(instanceId);
+    try {
+      db.settings({ ignoreUndefinedProperties: true });
+    } catch {
+      // Firestore.settings() throws if the singleton has already been used
+      // elsewhere in the process. The dead-letter path doesn't strictly
+      // depend on ignoreUndefinedProperties, so swallow rather than crash
+      // and mask the original BigQuery error that led us here.
+    }
+  }
+  return db;
+};
+
 export default async (
   rows: any[],
   config: ChangeTrackerConfig,
   e: Error
 ): Promise<void> => {
-  const db = getFirestore(config.firestoreInstanceId!);
-  db.settings({
-    ignoreUndefinedProperties: true,
-  });
+  const db = getConfiguredFirestore(config.firestoreInstanceId!);
   const batchArray = [db.batch()];
 
   let operationCounter = 0;
