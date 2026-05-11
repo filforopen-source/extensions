@@ -7,10 +7,10 @@ if (!admin.apps.length) {
   initializeApp();
 }
 
-const settingsApplied = new Set<string>();
+const settingsApplied = new Set<string | undefined>();
 
-const getConfiguredFirestore = (instanceId: string) => {
-  const db = getFirestore(instanceId);
+const getConfiguredFirestore = (instanceId?: string) => {
+  const db = instanceId ? getFirestore(instanceId) : getFirestore();
   if (!settingsApplied.has(instanceId)) {
     settingsApplied.add(instanceId);
     try {
@@ -30,7 +30,7 @@ export default async (
   config: ChangeTrackerConfig,
   e: Error
 ): Promise<void> => {
-  const db = getConfiguredFirestore(config.firestoreInstanceId!);
+  const db = getConfiguredFirestore(config.firestoreInstanceId);
   const batchArray = [db.batch()];
 
   let operationCounter = 0;
